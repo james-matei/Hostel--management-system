@@ -1,5 +1,6 @@
 package view.students;
 
+import dao.RoomDao;
 import dao.StudentDao;
 import javafx.collections.*;
 import javafx.geometry.Insets;
@@ -13,7 +14,8 @@ import java.util.function.Function;
 public class StudentsView {
 
     private final ObservableList<Student> students;
-    private final StudentDao dao = new StudentDao();
+    private final StudentDao dao     = new StudentDao();
+    private final RoomDao    roomDao = new RoomDao();
 
     public StudentsView(ObservableList<Student> students) {
         this.students = students;
@@ -130,11 +132,16 @@ public class StudentsView {
 
         Student saved = dao.addStudent(result);
         if (saved != null) {
+            // Increment occupied count if a room was assigned
+            if (saved.getRoomId() != null) {
+                roomDao.incrementOccupied(saved.getRoomId());
+            }
             students.add(saved);
             table.refresh();
             showSuccess("Student '" + saved.getName() + "' added.\n" +
                         "ID: " + saved.getId() + "\n" +
-                        "Username: " + saved.getUsername());
+                        "Username: " + saved.getUsername() + "\n" +
+                        "Room: " + (saved.getRoomId() != null ? saved.getRoomId() : "Unassigned"));
         } else {
             showError("Failed to add student. Please try again.");
         }
@@ -148,6 +155,16 @@ public class StudentsView {
 
         boolean success = dao.updateStudent(result);
         if (success) {
+            // Update room occupied counts if room changed
+            String oldRoom = student.getRoomId();
+            String newRoom = result.getRoomId();
+            boolean roomChanged = !java.util.Objects.equals(oldRoom, newRoom);
+
+            if (roomChanged) {
+                if (oldRoom != null) roomDao.decrementOccupied(oldRoom); // free old room
+                if (newRoom != null) roomDao.incrementOccupied(newRoom); // occupy new room
+            }
+
             int index = students.indexOf(student);
             if (index >= 0) students.set(index, result);
             table.refresh();
@@ -167,6 +184,10 @@ public class StudentsView {
             if (btn == ButtonType.OK) {
                 boolean success = dao.deleteStudent(student.getId());
                 if (success) {
+                    // Free up the room when student is deleted
+                    if (student.getRoomId() != null) {
+                        roomDao.decrementOccupied(student.getRoomId());
+                    }
                     students.remove(student);
                     table.refresh();
                     showSuccess("Student deleted successfully.");

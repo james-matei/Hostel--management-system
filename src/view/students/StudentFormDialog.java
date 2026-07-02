@@ -1,5 +1,6 @@
 package view.students;
 
+import dao.RoomDao;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
@@ -7,28 +8,33 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import model.Student;
+import java.util.List;
 
 /**
  * Reusable dialog for both Add and Edit student.
  * - Add mode : pass null  → empty form, admin sets username + password
  * - Edit mode: pass student → pre-filled, leave password blank to keep existing
+ *
+ * Room dropdown only shows rooms with available beds (occupied < capacity).
+ * On edit, the student's current room is always included even if now full.
  */
 public class StudentFormDialog {
 
     private final Dialog<Student> dialog;
     private final boolean isEditMode;
+    private final RoomDao roomDao = new RoomDao();
 
     // Form fields
-    private final TextField      nameField     = new TextField();
-    private final TextField      ageField      = new TextField();
-    private final TextField      courseField   = new TextField();
-    private final TextField      roomField     = new TextField();
-    private final TextField      emailField    = new TextField();
-    private final TextField      phoneField    = new TextField();
-    private final TextField      usernameField = new TextField();
-    private final PasswordField  passwordField = new PasswordField();
-    private final PasswordField  confirmField  = new PasswordField();
-    private final ComboBox<String> statusCombo = new ComboBox<>();
+    private final TextField        nameField     = new TextField();
+    private final TextField        ageField      = new TextField();
+    private final TextField        courseField   = new TextField();
+    private final ComboBox<String> roomCombo     = new ComboBox<>();
+    private final TextField        emailField    = new TextField();
+    private final TextField        phoneField    = new TextField();
+    private final TextField        usernameField = new TextField();
+    private final PasswordField    passwordField = new PasswordField();
+    private final PasswordField    confirmField  = new PasswordField();
+    private final ComboBox<String> statusCombo   = new ComboBox<>();
 
     private final Label errorLabel = new Label();
 
@@ -36,7 +42,7 @@ public class StudentFormDialog {
         this.isEditMode = (student != null);
         this.dialog     = new Dialog<>();
         setupDialog();
-        setupForm();
+        setupForm(student);
         if (isEditMode) prefillForm(student);
     }
 
@@ -50,7 +56,6 @@ public class StudentFormDialog {
         ButtonType cancelBtn = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
         dialog.getDialogPane().getButtonTypes().addAll(saveBtn, cancelBtn);
 
-        // Block save if validation fails
         dialog.getDialogPane().lookupButton(saveBtn).addEventFilter(
             javafx.event.ActionEvent.ACTION, e -> {
                 if (!validateForm()) e.consume();
@@ -66,7 +71,7 @@ public class StudentFormDialog {
 
     // ── Form layout ───────────────────────────────────────────────────────────
 
-    private void setupForm() {
+    private void setupForm(Student student) {
         GridPane grid = new GridPane();
         grid.setHgap(15);
         grid.setVgap(12);
@@ -75,12 +80,24 @@ public class StudentFormDialog {
         nameField.setPromptText("Full name");
         ageField.setPromptText("Age");
         courseField.setPromptText("e.g. Computer Science");
-        roomField.setPromptText("e.g. 101  (leave blank if unassigned)");
         emailField.setPromptText("student@email.com");
         phoneField.setPromptText("+254 700 000 000");
         usernameField.setPromptText("Login username");
         passwordField.setPromptText(isEditMode ? "Leave blank to keep current password" : "Set login password");
         confirmField.setPromptText("Confirm password");
+
+        // Load available rooms from DB
+        List<String> availableRooms = roomDao.getAvailableRoomIds();
+        roomCombo.getItems().add("— Unassigned —");
+        roomCombo.getItems().addAll(availableRooms);
+
+        // On edit: always include the student's current room even if it's now full
+        if (isEditMode && student != null && student.getRoomId() != null
+                && !availableRooms.contains(student.getRoomId())) {
+            roomCombo.getItems().add(1, student.getRoomId() + " (current)");
+        }
+        roomCombo.setValue("— Unassigned —");
+        roomCombo.setPrefWidth(250);
 
         statusCombo.getItems().addAll("Active", "Inactive", "Suspended", "Graduated");
         statusCombo.setValue("Active");
@@ -99,15 +116,22 @@ public class StudentFormDialog {
         addRow(grid, "Full Name *",  nameField,   row++);
         addRow(grid, "Age *",        ageField,    row++);
         addRow(grid, "Course *",     courseField, row++);
-        addRow(grid, "Room ID",      roomField,   row++);
-        addRow(grid, "Email",        emailField,  row++);
-        addRow(grid, "Phone",        phoneField,  row++);
-        addRow(grid, "Status *",     statusCombo, row++);
+        addRow(grid, "Room",         roomCombo,   row++);
+
+        // Room availability note
+        Label roomNote = new Label("ℹ  Only rooms with available beds are shown  (" + availableRooms.size() + " available)");
+        roomNote.setFont(Font.font("Arial", 10));
+        roomNote.setTextFill(Color.web("#27ae60"));
+        grid.add(roomNote, 1, row++);
+
+        addRow(grid, "Email",    emailField,  row++);
+        addRow(grid, "Phone",    phoneField,  row++);
+        addRow(grid, "Status *", statusCombo, row++);
 
         // Login credentials section
         grid.add(sectionLabel("Login Credentials"), 0, row++, 2, 1);
         addRow(grid, "Username *",   usernameField, row++);
-        addRow(grid, isEditMode ? "New Password"     : "Password *",         passwordField, row++);
+        addRow(grid, isEditMode ? "New Password"         : "Password *",         passwordField, row++);
         addRow(grid, isEditMode ? "Confirm New Password" : "Confirm Password *", confirmField,  row++);
 
         if (isEditMode) {
@@ -118,7 +142,6 @@ public class StudentFormDialog {
             grid.add(hint, 0, row++, 2, 1);
         }
 
-        // Error label
         errorLabel.setTextFill(Color.RED);
         errorLabel.setFont(Font.font("Arial", 11));
         errorLabel.setWrapText(true);
@@ -126,7 +149,7 @@ public class StudentFormDialog {
 
         nameField.setPrefWidth(250);
         dialog.getDialogPane().setContent(grid);
-        dialog.getDialogPane().setPrefWidth(480);
+        dialog.getDialogPane().setPrefWidth(500);
     }
 
     private Label sectionLabel(String text) {
@@ -150,13 +173,20 @@ public class StudentFormDialog {
     private void prefillForm(Student s) {
         nameField.setText(s.getName());
         ageField.setText(String.valueOf(s.getAge()));
-        courseField.setText(s.getCourse()    != null ? s.getCourse()    : "");
-        roomField.setText(s.getRoomId()      != null ? s.getRoomId()    : "");
-        emailField.setText(s.getEmail()      != null ? s.getEmail()     : "");
-        phoneField.setText(s.getPhone()      != null ? s.getPhone()     : "");
-        usernameField.setText(s.getUsername()!= null ? s.getUsername()  : "");
-        statusCombo.setValue(s.getStatus()   != null ? s.getStatus()    : "Active");
-        // Password intentionally left blank — fill only to change it
+        courseField.setText(s.getCourse()     != null ? s.getCourse()    : "");
+        emailField.setText(s.getEmail()       != null ? s.getEmail()     : "");
+        phoneField.setText(s.getPhone()       != null ? s.getPhone()     : "");
+        usernameField.setText(s.getUsername() != null ? s.getUsername()  : "");
+        statusCombo.setValue(s.getStatus()    != null ? s.getStatus()    : "Active");
+
+        // Select the student's current room — match even if it has " (current)" suffix
+        if (s.getRoomId() != null) {
+            String match = roomCombo.getItems().stream()
+                .filter(r -> r.startsWith(s.getRoomId()))
+                .findFirst().orElse("— Unassigned —");
+            roomCombo.setValue(match);
+        }
+        // Password intentionally left blank
     }
 
     // ── Validation ────────────────────────────────────────────────────────────
@@ -194,7 +224,6 @@ public class StudentFormDialog {
         String password = passwordField.getText();
         String confirm  = confirmField.getText();
 
-        // Password required when adding
         if (!isEditMode) {
             if (password.isEmpty()) {
                 errorLabel.setText("❌ Password is required.");
@@ -210,7 +239,6 @@ public class StudentFormDialog {
             }
         }
 
-        // On edit, only validate if a new password was entered
         if (isEditMode && !password.isEmpty()) {
             if (password.length() < 6) {
                 errorLabel.setText("❌ New password must be at least 6 characters.");
@@ -229,18 +257,25 @@ public class StudentFormDialog {
 
     private Student buildStudentFromForm() {
         Student s = new Student(
-            "",  // ID assigned by DB
+            "",
             nameField.getText().trim(),
             Integer.parseInt(ageField.getText().trim()),
             courseField.getText().trim()
         );
-        s.setRoomId(roomField.getText().trim().isEmpty()   ? null : roomField.getText().trim());
-        s.setEmail(emailField.getText().trim().isEmpty()    ? null : emailField.getText().trim());
-        s.setPhone(phoneField.getText().trim().isEmpty()    ? null : phoneField.getText().trim());
+
+        // Strip " (current)" suffix added in edit mode for full rooms
+        String selectedRoom = roomCombo.getValue();
+        if (selectedRoom != null && !selectedRoom.equals("— Unassigned —")) {
+            s.setRoomId(selectedRoom.replace(" (current)", "").trim());
+        } else {
+            s.setRoomId(null);
+        }
+
+        s.setEmail(emailField.getText().trim().isEmpty()   ? null : emailField.getText().trim());
+        s.setPhone(phoneField.getText().trim().isEmpty()   ? null : phoneField.getText().trim());
         s.setStatus(statusCombo.getValue());
         s.setUsername(usernameField.getText().trim());
 
-        // Null password on edit = keep existing; DAO handles this
         String password = passwordField.getText();
         s.setPassword(password.isEmpty() ? null : password);
 
