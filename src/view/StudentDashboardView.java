@@ -28,6 +28,7 @@ import model.Student;
 import view.students.MyRoomView;
 import view.students.MyPaymentsView;
 import view.students.MyDetailsView;
+import view.students.MyPassView;
 import view.students.AnnouncementsView;
 import view.students.SettingsView;
 
@@ -41,10 +42,9 @@ public class StudentDashboardView extends Application {
     private Student currentStudent;
     private StudentDashboardController controller;
 
-    private ObservableList<Payment> payments       = FXCollections.observableArrayList();
-    private ObservableList<String>  announcements  = FXCollections.observableArrayList();
+    private ObservableList<Payment> payments      = FXCollections.observableArrayList();
+    private ObservableList<String>  announcements = FXCollections.observableArrayList();
 
-    // Called by LoginView before start()
     public void setCurrentUser(Object user) {
         if (user instanceof Student s) {
             this.currentStudent = s;
@@ -143,6 +143,7 @@ public class StudentDashboardView extends Application {
             {"🏠 My Room",       "MyRoom"},
             {"💰 My Payments",   "MyPayments"},
             {"📄 My Details",    "MyDetails"},
+            {"🪪 My Pass",       "MyPass"},
             {"📢 Announcements", "Announcements"},
             {"⚙ Settings",      "Settings"}
         };
@@ -186,11 +187,12 @@ public class StudentDashboardView extends Application {
         switch (page) {
             case "Dashboard"     -> mainLayout.setCenter(createDashboardContent());
             case "MyRoom"        -> mainLayout.setCenter(new MyRoomView(currentStudent).getView());
-           case "MyPayments" -> {
-    MyPaymentsView paymentsView = new MyPaymentsView(currentStudent, controller, payments);
-    mainLayout.setCenter(paymentsView.getView());
-}
+            case "MyPayments"    -> {
+                MyPaymentsView paymentsView = new MyPaymentsView(currentStudent, controller, payments);
+                mainLayout.setCenter(paymentsView.getView());
+            }
             case "MyDetails"     -> mainLayout.setCenter(new MyDetailsView(currentStudent).getView());
+            case "MyPass"        -> mainLayout.setCenter(new MyPassView(currentStudent, controller).getView());
             case "Announcements" -> mainLayout.setCenter(new AnnouncementsView(announcements).getView());
             case "Settings"      -> mainLayout.setCenter(new SettingsView().getView());
             case "Logout"        -> logout();
@@ -217,13 +219,13 @@ public class StudentDashboardView extends Application {
             getRoomStatus(), "#27ae60"), 0, 1);
 
         grid.add(createStatsCard("Payment Status", getPaymentStatus(),
-            "Next: " + "Mar 15, 2024", "#e67e22"), 1, 1);
+            "Current Semester", "#e67e22"), 1, 1);
 
         grid.add(createStatsCard("Hostel Block", getHostelBlock(),
             "Floor: " + getFloorNumber(), "#9b59b6"), 2, 1);
 
-        grid.add(createStatsCard("Next Payment", "$450.00",
-            "Due: Mar 15, 2024", "#e74c3c"), 3, 1);
+        grid.add(createStatsCard("Room Price",
+            "KSh 10,000", "Per semester", "#e74c3c"), 3, 1);
 
         grid.add(buildAnnouncementsPreview(), 0, 2, 2, 1);
         grid.add(buildRecentPaymentsPreview(), 2, 2, 2, 1);
@@ -276,14 +278,20 @@ public class StudentDashboardView extends Application {
             grid.add(headers[i], i, 0);
         }
 
-        for (int i = 0; i < Math.min(3, payments.size()); i++) {
-            Payment p = payments.get(i);
-            grid.add(new Label(p.getPaymentDate().toString()), 0, i + 1);
-            grid.add(new Label("$" + p.getAmount()),           1, i + 1);
-            Label s = new Label(p.getStatus());
-            s.setTextFill(p.getStatus().equals("Paid") ? Color.GREEN
-                        : p.getStatus().equals("Pending") ? Color.ORANGE : Color.RED);
-            grid.add(s, 2, i + 1);
+        if (payments.isEmpty()) {
+            Label none = new Label("No payments recorded yet.");
+            none.setTextFill(Color.GRAY);
+            grid.add(none, 0, 1, 3, 1);
+        } else {
+            for (int i = 0; i < Math.min(3, payments.size()); i++) {
+                Payment p = payments.get(i);
+                grid.add(new Label(p.getPaymentDate().toString()), 0, i + 1);
+                grid.add(new Label("KSh " + String.format("%,.0f", p.getAmount())), 1, i + 1);
+                Label s = new Label(p.getStatus());
+                s.setTextFill(p.getStatus().equals("Paid")    ? Color.GREEN
+                            : p.getStatus().equals("Pending") ? Color.ORANGE : Color.RED);
+                grid.add(s, 2, i + 1);
+            }
         }
 
         Button viewAll = new Button("View All Payments");
@@ -295,7 +303,7 @@ public class StudentDashboardView extends Application {
         return card;
     }
 
-    // ── Shared Card Builders ──────────────────────────────────────────────────
+    // ── Card Builders ─────────────────────────────────────────────────────────
 
     private VBox createCard(String title, String content, String color) {
         VBox card = new VBox(10);
@@ -379,10 +387,8 @@ public class StudentDashboardView extends Application {
         a.showAndWait();
     }
 
-    private String getRoomStatus()  { return currentStudent.getRoomId() != null ? "Occupied" : "Not Assigned"; }
-    private String getPaymentStatus() {
-        return payments.isEmpty() ? "No payments" : payments.get(0).getStatus();
-    }
+    private String getRoomStatus()    { return currentStudent.getRoomId() != null ? "Occupied" : "Not Assigned"; }
+    private String getPaymentStatus() { return payments.isEmpty() ? "No payments" : payments.get(0).getStatus(); }
     private String getHostelBlock() {
         String r = currentStudent.getRoomId();
         if (r == null) return "Not Assigned";

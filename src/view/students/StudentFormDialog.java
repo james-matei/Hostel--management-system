@@ -10,24 +10,16 @@ import javafx.scene.text.FontWeight;
 import model.Student;
 import java.util.List;
 
-/**
- * Reusable dialog for both Add and Edit student.
- * - Add mode : pass null  → empty form, admin sets username + password
- * - Edit mode: pass student → pre-filled, leave password blank to keep existing
- *
- * Room dropdown only shows rooms with available beds (occupied < capacity).
- * On edit, the student's current room is always included even if now full.
- */
 public class StudentFormDialog {
 
     private final Dialog<Student> dialog;
     private final boolean isEditMode;
     private final RoomDao roomDao = new RoomDao();
 
-    // Form fields
     private final TextField        nameField     = new TextField();
     private final TextField        ageField      = new TextField();
     private final TextField        courseField   = new TextField();
+    private final TextField        regField      = new TextField();  // registration number
     private final ComboBox<String> roomCombo     = new ComboBox<>();
     private final TextField        emailField    = new TextField();
     private final TextField        phoneField    = new TextField();
@@ -45,8 +37,6 @@ public class StudentFormDialog {
         setupForm(student);
         if (isEditMode) prefillForm(student);
     }
-
-    // ── Dialog setup ──────────────────────────────────────────────────────────
 
     private void setupDialog() {
         dialog.setTitle(isEditMode ? "Edit Student" : "Add New Student");
@@ -69,8 +59,6 @@ public class StudentFormDialog {
         });
     }
 
-    // ── Form layout ───────────────────────────────────────────────────────────
-
     private void setupForm(Student student) {
         GridPane grid = new GridPane();
         grid.setHgap(15);
@@ -80,18 +68,17 @@ public class StudentFormDialog {
         nameField.setPromptText("Full name");
         ageField.setPromptText("Age");
         courseField.setPromptText("e.g. Computer Science");
+        regField.setPromptText("e.g. 66789");
         emailField.setPromptText("student@email.com");
         phoneField.setPromptText("+254 700 000 000");
         usernameField.setPromptText("Login username");
         passwordField.setPromptText(isEditMode ? "Leave blank to keep current password" : "Set login password");
         confirmField.setPromptText("Confirm password");
 
-        // Load available rooms from DB
+        // Load available rooms
         List<String> availableRooms = roomDao.getAvailableRoomIds();
         roomCombo.getItems().add("— Unassigned —");
         roomCombo.getItems().addAll(availableRooms);
-
-        // On edit: always include the student's current room even if it's now full
         if (isEditMode && student != null && student.getRoomId() != null
                 && !availableRooms.contains(student.getRoomId())) {
             roomCombo.getItems().add(1, student.getRoomId() + " (current)");
@@ -111,28 +98,34 @@ public class StudentFormDialog {
             grid.add(idNote, 0, row++, 2, 1);
         }
 
-        // Personal details section
+        // ── Personal Details ──────────────────────────────────────────────────
         grid.add(sectionLabel("Personal Details"), 0, row++, 2, 1);
-        addRow(grid, "Full Name *",  nameField,   row++);
-        addRow(grid, "Age *",        ageField,    row++);
-        addRow(grid, "Course *",     courseField, row++);
-        addRow(grid, "Room",         roomCombo,   row++);
+        addRow(grid, "Full Name *",      nameField,   row++);
+        addRow(grid, "Age *",            ageField,    row++);
+        addRow(grid, "Course *",         courseField, row++);
+        addRow(grid, "Reg Number *",     regField,    row++);
 
-        // Room availability note
-        Label roomNote = new Label("ℹ  Only rooms with available beds are shown  (" + availableRooms.size() + " available)");
+        Label regNote = new Label("ℹ  Unique student registration number e.g. 66789");
+        regNote.setFont(Font.font("Arial", 10));
+        regNote.setTextFill(Color.web("#7f8c8d"));
+        grid.add(regNote, 1, row++);
+
+        addRow(grid, "Room",             roomCombo,   row++);
+
+        Label roomNote = new Label("ℹ  Only rooms with available beds shown (" + availableRooms.size() + " available)");
         roomNote.setFont(Font.font("Arial", 10));
         roomNote.setTextFill(Color.web("#27ae60"));
         grid.add(roomNote, 1, row++);
 
-        addRow(grid, "Email",    emailField,  row++);
-        addRow(grid, "Phone",    phoneField,  row++);
-        addRow(grid, "Status *", statusCombo, row++);
+        addRow(grid, "Email",            emailField,  row++);
+        addRow(grid, "Phone",            phoneField,  row++);
+        addRow(grid, "Status *",         statusCombo, row++);
 
-        // Login credentials section
+        // ── Login Credentials ─────────────────────────────────────────────────
         grid.add(sectionLabel("Login Credentials"), 0, row++, 2, 1);
-        addRow(grid, "Username *",   usernameField, row++);
-        addRow(grid, isEditMode ? "New Password"         : "Password *",         passwordField, row++);
-        addRow(grid, isEditMode ? "Confirm New Password" : "Confirm Password *", confirmField,  row++);
+        addRow(grid, "Username *",       usernameField, row++);
+        addRow(grid, isEditMode ? "New Password"             : "Password *",         passwordField, row++);
+        addRow(grid, isEditMode ? "Confirm New Password"     : "Confirm Password *", confirmField,  row++);
 
         if (isEditMode) {
             Label hint = new Label("ℹ  Leave password fields blank to keep the current password");
@@ -168,28 +161,23 @@ public class StudentFormDialog {
         grid.add(field, 1, row);
     }
 
-    // ── Prefill (edit mode) ───────────────────────────────────────────────────
-
     private void prefillForm(Student s) {
         nameField.setText(s.getName());
         ageField.setText(String.valueOf(s.getAge()));
-        courseField.setText(s.getCourse()     != null ? s.getCourse()    : "");
-        emailField.setText(s.getEmail()       != null ? s.getEmail()     : "");
-        phoneField.setText(s.getPhone()       != null ? s.getPhone()     : "");
-        usernameField.setText(s.getUsername() != null ? s.getUsername()  : "");
-        statusCombo.setValue(s.getStatus()    != null ? s.getStatus()    : "Active");
+        courseField.setText(s.getCourse()     != null ? s.getCourse()     : "");
+        regField.setText(s.getRegNumber()     != null ? s.getRegNumber()  : "");
+        emailField.setText(s.getEmail()       != null ? s.getEmail()      : "");
+        phoneField.setText(s.getPhone()       != null ? s.getPhone()      : "");
+        usernameField.setText(s.getUsername() != null ? s.getUsername()   : "");
+        statusCombo.setValue(s.getStatus()    != null ? s.getStatus()     : "Active");
 
-        // Select the student's current room — match even if it has " (current)" suffix
         if (s.getRoomId() != null) {
             String match = roomCombo.getItems().stream()
                 .filter(r -> r.startsWith(s.getRoomId()))
                 .findFirst().orElse("— Unassigned —");
             roomCombo.setValue(match);
         }
-        // Password intentionally left blank
     }
-
-    // ── Validation ────────────────────────────────────────────────────────────
 
     private boolean validateForm() {
         errorLabel.setText("");
@@ -214,6 +202,14 @@ public class StudentFormDialog {
         }
         if (courseField.getText().trim().isEmpty()) {
             errorLabel.setText("❌ Course is required.");
+            return false;
+        }
+        if (regField.getText().trim().isEmpty()) {
+            errorLabel.setText("❌ Registration number is required.");
+            return false;
+        }
+        if (!regField.getText().trim().matches("\\d+")) {
+            errorLabel.setText("❌ Registration number must be numeric e.g. 66789.");
             return false;
         }
         if (usernameField.getText().trim().isEmpty()) {
@@ -253,8 +249,6 @@ public class StudentFormDialog {
         return true;
     }
 
-    // ── Build result ──────────────────────────────────────────────────────────
-
     private Student buildStudentFromForm() {
         Student s = new Student(
             "",
@@ -263,7 +257,8 @@ public class StudentFormDialog {
             courseField.getText().trim()
         );
 
-        // Strip " (current)" suffix added in edit mode for full rooms
+        s.setRegNumber(regField.getText().trim());
+
         String selectedRoom = roomCombo.getValue();
         if (selectedRoom != null && !selectedRoom.equals("— Unassigned —")) {
             s.setRoomId(selectedRoom.replace(" (current)", "").trim());
@@ -282,7 +277,6 @@ public class StudentFormDialog {
         return s;
     }
 
-    /** Show dialog and return Student, or null if cancelled */
     public Student show() {
         return dialog.showAndWait().orElse(null);
     }

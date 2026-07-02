@@ -14,8 +14,8 @@ public class StudentDao {
      * Loads a student by username, including password for login verification.
      */
     public Student getStudentByUsername(String username) {
-        String sql = "SELECT p.*, s.course, s.roomId, s.enrollment_date, s.status, s.username, s.password " +
-                     "FROM person p JOIN student s ON p.id = s.id WHERE s.username = ?";
+       String sql = "SELECT p.*, s.course, s.roomId, s.enrollment_date, s.status, s.username, s.password, s.regNumber " +
+             "FROM person p JOIN student s ON p.id = s.id WHERE s.username = ?";
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -36,6 +36,7 @@ public class StudentDao {
                 student.setStatus(rs.getString("status"));
                 student.setUsername(rs.getString("username"));
                 student.setPassword(rs.getString("password")); // needed for login check
+                student.setRegNumber(rs.getString("regNumber"));
                 return student;
             }
 
@@ -49,7 +50,7 @@ public class StudentDao {
      * Loads a student by their numeric ID.
      */
     public Student getStudentById(String id) {
-        String sql = "SELECT p.*, s.course, s.roomId, s.status, s.username " +
+        String sql = "SELECT p.*, s.course, s.roomId, s.status, s.username, s.regNumber " +
                      "FROM person p JOIN student s ON p.id = s.id WHERE p.id = ?";
 
         try (Connection conn = DatabaseConnection.getConnection();
@@ -70,6 +71,7 @@ public class StudentDao {
                 student.setRoomId(rs.getString("roomId"));
                 student.setStatus(rs.getString("status"));
                 student.setUsername(rs.getString("username"));
+                student.setRegNumber(rs.getString("regNumber"));
                 return student;
             }
 
@@ -84,7 +86,7 @@ public class StudentDao {
      */
     public List<Student> getAllStudents() {
         List<Student> list = new ArrayList<>();
-        String sql = "SELECT p.*, s.course, s.roomId, s.status, s.username " +
+        String sql = "SELECT p.*, s.course, s.roomId, s.status, s.username, s.regNumber " +
                      "FROM person p JOIN student s ON p.id = s.id";
 
         try (Connection conn = DatabaseConnection.getConnection();
@@ -103,6 +105,7 @@ public class StudentDao {
                 student.setRoomId(rs.getString("roomId"));
                 student.setStatus(rs.getString("status"));
                 student.setUsername(rs.getString("username"));
+                student.setRegNumber(rs.getString("regNumber"));
                 list.add(student);
             }
 
@@ -122,8 +125,8 @@ public class StudentDao {
      */
     public Student addStudent(Student student) {
         String personSql  = "INSERT INTO person (name, age, email, phone) VALUES (?, ?, ?, ?)";
-        String studentSql = "INSERT INTO student (id, course, roomId, status, username, password) " +
-                            "VALUES (?, ?, ?, ?, ?, ?)";
+        String studentSql = "INSERT INTO student (id, course, roomId, status, username, password, regNumber) " +
+                            "VALUES (?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = DatabaseConnection.getConnection()) {
             conn.setAutoCommit(false);
@@ -149,6 +152,7 @@ public class StudentDao {
                         ps2.setString(4, student.getStatus());
                         ps2.setString(5, student.getUsername());
                         ps2.setString(6, student.getPassword());
+                        ps2.setString(7, student.getRegNumber());
                         ps2.executeUpdate();
                     }
                 }
@@ -179,8 +183,8 @@ public class StudentDao {
 
         boolean changePassword = student.getPassword() != null && !student.getPassword().isEmpty();
         String studentSql = changePassword
-            ? "UPDATE student SET course=?, roomId=?, status=?, username=?, password=? WHERE id=?"
-            : "UPDATE student SET course=?, roomId=?, status=?, username=? WHERE id=?";
+            ? "UPDATE student SET course=?, roomId=?, status=?, username=?, password=?, regNumber=? WHERE id=?"
+            : "UPDATE student SET course=?, roomId=?, status=?, username=?, regNumber=? WHERE id=?";
 
         try (Connection conn = DatabaseConnection.getConnection()) {
             conn.setAutoCommit(false);
@@ -203,9 +207,11 @@ public class StudentDao {
                 ps2.setString(4, student.getUsername());
                 if (changePassword) {
                     ps2.setString(5, student.getPassword());
-                    ps2.setString(6, student.getId());
+                    ps2.setString(6, student.getRegNumber());
+                    ps2.setString(7, student.getId());
                 } else {
-                    ps2.setString(5, student.getId());
+                    ps2.setString(5, student.getRegNumber());
+                    ps2.setString(6, student.getId());
                 }
                 ps2.executeUpdate();
 

@@ -13,113 +13,127 @@ import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 
 public class LoginView extends Application {
-    
+
     private AuthController authController;
     private Stage primaryStage;
-    
+
     @Override
     public void start(Stage primaryStage) {
-        this.primaryStage = primaryStage;
+        this.primaryStage   = primaryStage;
         this.authController = new AuthController();
-        
+
         primaryStage.setTitle("Hostel Management System - Login");
-        
-        // Create main layout
-        BorderPane mainLayout = new BorderPane();
-        mainLayout.setStyle("-fx-background-color: #ecf0f1;");
-        
-        // Center login form
-        VBox loginForm = createLoginForm();
-        mainLayout.setCenter(loginForm);
-        
-        // Add footer
-        mainLayout.setBottom(createFooter());
-        
-        Scene scene = new Scene(mainLayout, 400, 500);
+        primaryStage.setResizable(false);
+
+        // ── Two-panel layout ──────────────────────────────────────────────────
+        HBox root = new HBox();
+
+        root.getChildren().addAll(createLeftPanel(), createRightPanel());
+
+        Scene scene = new Scene(root, 750, 480);
         primaryStage.setScene(scene);
         primaryStage.show();
     }
-    
-    private VBox createLoginForm() {
-        VBox form = new VBox(20);
-        form.setAlignment(Pos.CENTER);
-        form.setPadding(new Insets(40));
-        form.setMaxWidth(350);
-        form.setStyle("-fx-background-color: white; -fx-background-radius: 10; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 10);");
-        
-        // Title
-        Label titleLabel = new Label("🏨 HOSTEL MANAGEMENT");
+
+    // ── Left decorative panel ─────────────────────────────────────────────────
+
+    private VBox createLeftPanel() {
+        VBox panel = new VBox(15);
+        panel.setPrefWidth(300);
+        panel.setAlignment(Pos.CENTER);
+        panel.setPadding(new Insets(40));
+        panel.setStyle("-fx-background-color: #2c3e50;");
+
+        Label icon = new Label("🏨");
+        icon.setFont(Font.font("Arial", 60));
+
+        Label name = new Label("HOSTEL\nMANAGEMENT\nSYSTEM");
+        name.setFont(Font.font("Arial", FontWeight.BOLD, 20));
+        name.setTextFill(Color.WHITE);
+        name.setTextAlignment(javafx.scene.text.TextAlignment.CENTER);
+
+        Label tagline = new Label("Manage smarter.\nLive better.");
+        tagline.setFont(Font.font("Arial", 13));
+        tagline.setTextFill(Color.web("#95a5a6"));
+        tagline.setTextAlignment(javafx.scene.text.TextAlignment.CENTER);
+
+        Separator sep = new Separator();
+        sep.setMaxWidth(80);
+        sep.setStyle("-fx-background-color: #3498db;");
+
+        panel.getChildren().addAll(icon, name, sep, tagline);
+        return panel;
+    }
+
+    // ── Right login form ──────────────────────────────────────────────────────
+
+    private VBox createRightPanel() {
+        VBox panel = new VBox(18);
+        panel.setPrefWidth(450);
+        panel.setAlignment(Pos.CENTER);
+        panel.setPadding(new Insets(50, 60, 50, 60));
+        panel.setStyle("-fx-background-color: #f5f6fa;");
+
+        Label titleLabel = new Label("Welcome back 👋");
         titleLabel.setFont(Font.font("Arial", FontWeight.BOLD, 24));
         titleLabel.setTextFill(Color.web("#2c3e50"));
-        
-        Label subtitleLabel = new Label("Login to your account");
-        subtitleLabel.setFont(Font.font("Arial", 14));
+
+        Label subtitleLabel = new Label("Sign in to your account");
+        subtitleLabel.setFont(Font.font("Arial", 13));
         subtitleLabel.setTextFill(Color.GRAY);
-        
-        // Username field
-        VBox usernameBox = new VBox(5);
-        Label usernameLabel = new Label("Username");
-        usernameLabel.setFont(Font.font("Arial", FontWeight.BOLD, 12));
+
+        // Username
         TextField usernameField = new TextField();
-        usernameField.setPromptText("Enter admin username or student ID");
-        usernameField.setStyle("-fx-padding: 10; -fx-background-radius: 5; -fx-border-radius: 5; -fx-border-color: #ddd;");
-        usernameBox.getChildren().addAll(usernameLabel, usernameField);
-        
-        // Password field
-        VBox passwordBox = new VBox(5);
-        Label passwordLabel = new Label("Password");
-        passwordLabel.setFont(Font.font("Arial", FontWeight.BOLD, 12));
+        usernameField.setPromptText("Username");
+        usernameField.setPrefHeight(42);
+        usernameField.setStyle(fieldStyle());
+
+        // Password
         PasswordField passwordField = new PasswordField();
-        passwordField.setPromptText("Enter password");
-        passwordField.setStyle("-fx-padding: 10; -fx-background-radius: 5; -fx-border-radius: 5; -fx-border-color: #ddd;");
-        passwordBox.getChildren().addAll(passwordLabel, passwordField);
-        
-        // Login button
-        Button loginButton = new Button("LOGIN");
-        loginButton.setPrefHeight(40);
-        loginButton.setStyle("-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-cursor: hand;");
-        loginButton.setMaxWidth(Double.MAX_VALUE);
-        
-        // Status label for messages
+        passwordField.setPromptText("Password");
+        passwordField.setPrefHeight(42);
+        passwordField.setStyle(fieldStyle());
+
+        // Status label
         Label statusLabel = new Label();
-        statusLabel.setTextFill(Color.RED);
         statusLabel.setWrapText(true);
-        
-        // Forgot password link
-        Hyperlink forgotLink = new Hyperlink("Forgot password?");
-        forgotLink.setTextFill(Color.GRAY);
-        
-        // Add hover effect to button
-        loginButton.setOnMouseEntered(e -> 
-            loginButton.setStyle("-fx-background-color: #2980b9; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-cursor: hand;"));
-        loginButton.setOnMouseExited(e -> 
-            loginButton.setStyle("-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-cursor: hand;"));
-        
+        statusLabel.setFont(Font.font("Arial", 12));
+        statusLabel.setMinHeight(18);
+
+        // Login button
+        Button loginButton = new Button("Sign In");
+        loginButton.setPrefHeight(42);
+        loginButton.setMaxWidth(Double.MAX_VALUE);
+        loginButton.setFont(Font.font("Arial", FontWeight.BOLD, 14));
+        loginButton.setStyle("-fx-background-color: #3498db; -fx-text-fill: white; -fx-background-radius: 6; -fx-cursor: hand;");
+        loginButton.setOnMouseEntered(e -> loginButton.setStyle("-fx-background-color: #2980b9; -fx-text-fill: white; -fx-background-radius: 6; -fx-cursor: hand;"));
+        loginButton.setOnMouseExited(e  -> loginButton.setStyle("-fx-background-color: #3498db; -fx-text-fill: white; -fx-background-radius: 6; -fx-cursor: hand;"));
+
+        // Allow Enter key to trigger login
+        passwordField.setOnAction(e -> loginButton.fire());
+        usernameField.setOnAction(e -> passwordField.requestFocus());
+
         // Login action
         loginButton.setOnAction(e -> {
             String username = usernameField.getText().trim();
             String password = passwordField.getText();
-            
+
             if (username.isEmpty()) {
-                statusLabel.setText("❌ Please enter username");
-                statusLabel.setTextFill(Color.RED);
+                setStatus(statusLabel, "❌ Please enter your username.", true);
                 return;
             }
-            
-            // Call login on the instance
+            if (password.isEmpty()) {
+                setStatus(statusLabel, "❌ Please enter your password.", true);
+                return;
+            }
+
             Object user = authController.login(username, password);
-            
+
             if (user != null) {
-                statusLabel.setText("✅ Login successful! Redirecting...");
-                statusLabel.setTextFill(Color.GREEN);
-                
-                // Store user in AuthController for global access
+                setStatus(statusLabel, "✅ Login successful! Redirecting...", false);
                 AuthController.setCurrentUser(user);
-                
-                // Close login window
                 primaryStage.close();
-                
-                // Check role and redirect
+
                 if (authController.isAdmin(user)) {
                     System.out.println("Redirecting to Admin Dashboard");
                     openDashboard(user);
@@ -128,61 +142,61 @@ public class LoginView extends Application {
                     openStudentView(user);
                 }
             } else {
-                statusLabel.setText("❌ Invalid username or password");
-                statusLabel.setTextFill(Color.RED);
+                setStatus(statusLabel, "❌ Invalid username or password.", true);
+                passwordField.clear();
+                passwordField.requestFocus();
             }
         });
-        
-        form.getChildren().addAll(titleLabel, subtitleLabel, usernameBox, passwordBox, loginButton, statusLabel, forgotLink);
-        
-        return form;
+
+        // Footer
+        Label footer = new Label("© 2024 Hostel Management System v1.0");
+        footer.setFont(Font.font("Arial", 11));
+        footer.setTextFill(Color.LIGHTGRAY);
+
+        panel.getChildren().addAll(
+            titleLabel, subtitleLabel,
+            usernameField, passwordField,
+            statusLabel, loginButton,
+            footer
+        );
+        return panel;
     }
-    
-    private HBox createFooter() {
-        HBox footer = new HBox();
-        footer.setPadding(new Insets(15));
-        footer.setAlignment(Pos.CENTER);
-        footer.setStyle("-fx-background-color: #2c3e50;");
-        
-        Label copyright = new Label("© 2024 Hostel Management System v1.0");
-        copyright.setFont(Font.font("Arial", 11));
-        copyright.setTextFill(Color.LIGHTGRAY);
-        
-        footer.getChildren().add(copyright);
-        
-        return footer;
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private String fieldStyle() {
+        return "-fx-padding: 10; -fx-background-radius: 6; " +
+               "-fx-border-radius: 6; -fx-border-color: #dfe6e9; " +
+               "-fx-background-color: white; -fx-font-size: 13;";
     }
-    
+
+    private void setStatus(Label label, String message, boolean isError) {
+        label.setText(message);
+        label.setTextFill(isError ? Color.RED : Color.web("#27ae60"));
+    }
+
     private void openDashboard(Object user) {
         try {
-            // Create and show dashboard with user
             DashboardView dashboard = new DashboardView();
-            dashboard.setCurrentUser(user);  // Pass the user object
-            
-            Stage dashboardStage = new Stage();
-            dashboard.start(dashboardStage);
-            
+            dashboard.setCurrentUser(user);
+            dashboard.start(new Stage());
         } catch (Exception e) {
             e.printStackTrace();
             showError("Failed to open dashboard: " + e.getMessage());
         }
     }
-    
-  private void openStudentView(Object user) {
-    try {
-        // Open StudentDashboardView directly
-        StudentDashboardView studentDashboard = new StudentDashboardView();
-        studentDashboard.setCurrentUser(user);
-        
-        Stage studentStage = new Stage();
-        studentDashboard.start(studentStage);
-        
-    } catch (Exception e) {
-        e.printStackTrace();
-        showError("Failed to open student dashboard: " + e.getMessage());
+
+    private void openStudentView(Object user) {
+        try {
+            StudentDashboardView studentDashboard = new StudentDashboardView();
+            studentDashboard.setCurrentUser(user);
+            studentDashboard.start(new Stage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            showError("Failed to open student dashboard: " + e.getMessage());
+        }
     }
-}
-    
+
     private void showError(String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle("Error");
@@ -190,8 +204,6 @@ public class LoginView extends Application {
         alert.setContentText(message);
         alert.showAndWait();
     }
-    
-    public static void main(String[] args) {
-        launch(args);
-    }
+
+    public static void main(String[] args) { launch(args); }
 }

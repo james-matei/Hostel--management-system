@@ -48,7 +48,7 @@ public class StudentsView {
         HBox bar = new HBox(10);
 
         TextField searchField = new TextField();
-        searchField.setPromptText("Search by name or ID...");
+        searchField.setPromptText("Search by name, ID or reg number...");
         searchField.setPrefHeight(35);
         HBox.setHgrow(searchField, Priority.ALWAYS);
 
@@ -78,12 +78,12 @@ public class StudentsView {
         table.setPlaceholder(new Label("No students found."));
 
         table.getColumns().addAll(
-            makeCol("ID",       s -> s.getId()),
-            makeCol("Name",     s -> s.getName()),
-            makeCol("Course",   s -> s.getCourse()   != null ? s.getCourse()   : "-"),
-            makeCol("Room",     s -> s.getRoomId()   != null ? s.getRoomId()   : "Unassigned"),
-            makeCol("Username", s -> s.getUsername() != null ? s.getUsername() : "-"),
-            makeCol("Status",   s -> s.getStatus()   != null ? s.getStatus()   : "-"),
+            makeCol("ID",      s -> s.getId()),
+            makeCol("Reg No",  s -> s.getRegNumber() != null ? s.getRegNumber() : "-"),
+            makeCol("Name",    s -> s.getName()),
+            makeCol("Course",  s -> s.getCourse()    != null ? s.getCourse()    : "-"),
+            makeCol("Room",    s -> s.getRoomId()    != null ? s.getRoomId()    : "Unassigned"),
+            makeCol("Status",  s -> s.getStatus()    != null ? s.getStatus()    : "-"),
             buildActionColumn(table)
         );
 
@@ -104,7 +104,7 @@ public class StudentsView {
             private final Button viewBtn   = styledBtn("View",   "#3498db");
             private final Button editBtn   = styledBtn("Edit",   "#f39c12");
             private final Button deleteBtn = styledBtn("Delete", "#e74c3c");
-            private final HBox pane        = new HBox(5, viewBtn, editBtn, deleteBtn);
+            private final HBox   pane      = new HBox(5, viewBtn, editBtn, deleteBtn);
 
             {
                 viewBtn.setOnAction(e ->
@@ -132,16 +132,14 @@ public class StudentsView {
 
         Student saved = dao.addStudent(result);
         if (saved != null) {
-            // Increment occupied count if a room was assigned
-            if (saved.getRoomId() != null) {
-                roomDao.incrementOccupied(saved.getRoomId());
-            }
+            if (saved.getRoomId() != null) roomDao.incrementOccupied(saved.getRoomId());
             students.add(saved);
             table.refresh();
             showSuccess("Student '" + saved.getName() + "' added.\n" +
-                        "ID: " + saved.getId() + "\n" +
+                        "ID: "       + saved.getId() + "\n" +
+                        "Reg No: "   + (saved.getRegNumber() != null ? saved.getRegNumber() : "—") + "\n" +
                         "Username: " + saved.getUsername() + "\n" +
-                        "Room: " + (saved.getRoomId() != null ? saved.getRoomId() : "Unassigned"));
+                        "Room: "     + (saved.getRoomId() != null ? saved.getRoomId() : "Unassigned"));
         } else {
             showError("Failed to add student. Please try again.");
         }
@@ -151,20 +149,16 @@ public class StudentsView {
         Student result = new StudentFormDialog(student).show();
         if (result == null) return;
 
-        result.setId(student.getId()); // preserve original ID
+        result.setId(student.getId());
 
         boolean success = dao.updateStudent(result);
         if (success) {
-            // Update room occupied counts if room changed
             String oldRoom = student.getRoomId();
             String newRoom = result.getRoomId();
-            boolean roomChanged = !java.util.Objects.equals(oldRoom, newRoom);
-
-            if (roomChanged) {
-                if (oldRoom != null) roomDao.decrementOccupied(oldRoom); // free old room
-                if (newRoom != null) roomDao.incrementOccupied(newRoom); // occupy new room
+            if (!java.util.Objects.equals(oldRoom, newRoom)) {
+                if (oldRoom != null) roomDao.decrementOccupied(oldRoom);
+                if (newRoom != null) roomDao.incrementOccupied(newRoom);
             }
-
             int index = students.indexOf(student);
             if (index >= 0) students.set(index, result);
             table.refresh();
@@ -184,10 +178,7 @@ public class StudentsView {
             if (btn == ButtonType.OK) {
                 boolean success = dao.deleteStudent(student.getId());
                 if (success) {
-                    // Free up the room when student is deleted
-                    if (student.getRoomId() != null) {
-                        roomDao.decrementOccupied(student.getRoomId());
-                    }
+                    if (student.getRoomId() != null) roomDao.decrementOccupied(student.getRoomId());
                     students.remove(student);
                     table.refresh();
                     showSuccess("Student deleted successfully.");
@@ -203,12 +194,13 @@ public class StudentsView {
         alert.setTitle("Student Details");
         alert.setHeaderText(s.getName() + "  |  ID: " + s.getId());
         alert.setContentText(
-            "Course   : " + (s.getCourse()   != null ? s.getCourse()   : "—") + "\n" +
-            "Room     : " + (s.getRoomId()   != null ? s.getRoomId()   : "Unassigned") + "\n" +
-            "Status   : " + (s.getStatus()   != null ? s.getStatus()   : "—") + "\n" +
-            "Username : " + (s.getUsername() != null ? s.getUsername() : "—") + "\n" +
-            "Email    : " + (s.getEmail()    != null ? s.getEmail()    : "—") + "\n" +
-            "Phone    : " + (s.getPhone()    != null ? s.getPhone()    : "—")
+            "Reg No   : " + (s.getRegNumber() != null ? s.getRegNumber() : "—") + "\n" +
+            "Course   : " + (s.getCourse()    != null ? s.getCourse()    : "—") + "\n" +
+            "Room     : " + (s.getRoomId()    != null ? s.getRoomId()    : "Unassigned") + "\n" +
+            "Status   : " + (s.getStatus()    != null ? s.getStatus()    : "—") + "\n" +
+            "Username : " + (s.getUsername()  != null ? s.getUsername()  : "—") + "\n" +
+            "Email    : " + (s.getEmail()     != null ? s.getEmail()     : "—") + "\n" +
+            "Phone    : " + (s.getPhone()     != null ? s.getPhone()     : "—")
         );
         alert.showAndWait();
     }
@@ -224,7 +216,8 @@ public class StudentsView {
         ObservableList<Student> filtered = FXCollections.observableArrayList();
         for (Student s : students) {
             if (s.getName().toLowerCase().contains(lower) ||
-                s.getId().toLowerCase().contains(lower))
+                s.getId().toLowerCase().contains(lower) ||
+                (s.getRegNumber() != null && s.getRegNumber().toLowerCase().contains(lower)))
                 filtered.add(s);
         }
         table.setItems(filtered);
@@ -240,17 +233,13 @@ public class StudentsView {
 
     private void showSuccess(String message) {
         Alert a = new Alert(Alert.AlertType.INFORMATION);
-        a.setTitle("Success");
-        a.setHeaderText(null);
-        a.setContentText("✅ " + message);
-        a.showAndWait();
+        a.setTitle("Success"); a.setHeaderText(null);
+        a.setContentText("✅ " + message); a.showAndWait();
     }
 
     private void showError(String message) {
         Alert a = new Alert(Alert.AlertType.ERROR);
-        a.setTitle("Error");
-        a.setHeaderText(null);
-        a.setContentText("❌ " + message);
-        a.showAndWait();
+        a.setTitle("Error"); a.setHeaderText(null);
+        a.setContentText("❌ " + message); a.showAndWait();
     }
 }

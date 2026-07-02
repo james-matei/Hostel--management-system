@@ -27,9 +27,9 @@ import view.components.HeaderComponent;
 import view.components.SidebarComponent;
 import view.components.StatusBarComponent;
 import view.students.StudentsView;
-import view.students.StudentFormDialog;
 import view.rooms.RoomsView;
 import view.payments.PaymentsView;
+import view.reports.ReportsView;
 
 public class DashboardView extends Application {
 
@@ -38,13 +38,11 @@ public class DashboardView extends Application {
     private Object currentUser;
     private AuthController authController;
 
-    // Components
-    private HeaderComponent header;
+    private HeaderComponent    header;
     private StatusBarComponent statusBar;
 
-    // Dashboard-only data
-    private final ObservableList<String> recentActivities = FXCollections.observableArrayList();
-    private final ObservableList<Student> students = FXCollections.observableArrayList();
+    private final ObservableList<String>  recentActivities = FXCollections.observableArrayList();
+    private final ObservableList<Student> students         = FXCollections.observableArrayList();
 
     public void setCurrentUser(Object user) {
         this.currentUser = user;
@@ -102,9 +100,10 @@ public class DashboardView extends Application {
             case "Students"  -> mainLayout.setCenter(new StudentsView(students).getView());
             case "Rooms"     -> mainLayout.setCenter(new RoomsView().getView());
             case "Payments"  -> mainLayout.setCenter(new PaymentsView().getView());
+            case "Reports" -> mainLayout.setCenter(new ReportsView().getView());
             default          -> {
-                showAlert(Alert.AlertType.INFORMATION, "Not Implemented", null, page + " view is coming soon!");
-                statusBar.setStatus(page + " view not yet implemented");
+                //showAlert(Alert.AlertType.INFORMATION, "Not Implemented", null, page + " view is coming soon!");
+               // statusBar.setStatus(page + " view not yet implemented");
             }
         }
     }
@@ -117,12 +116,12 @@ public class DashboardView extends Application {
         grid.setHgap(20);
         grid.setVgap(20);
 
-        String name = (currentUser instanceof Admin a) ? a.getName() : "Back";
+        String name = (currentUser instanceof Admin a) ? a.getName() : "Admin";
         grid.add(createCard("Welcome back, " + name + "!", "Here's what's happening in your hostel today.", "#3498db"), 0, 0, 4, 1);
-        grid.add(createStatsCard("Total Students",  "156",     "+12 this month",       "#27ae60"), 0, 1);
-        grid.add(createStatsCard("Available Rooms", "23",      "Out of 180 total",     "#e67e22"), 1, 1);
-        grid.add(createStatsCard("Monthly Revenue", "$45,600", "+15% vs last month",   "#9b59b6"), 2, 1);
-        grid.add(createStatsCard("Occupancy Rate",  "87%",     "156/180 rooms filled", "#e74c3c"), 3, 1);
+        grid.add(createStatsCard("Total Students",  String.valueOf(students.size()), "Loaded from database",   "#27ae60"), 0, 1);
+        grid.add(createStatsCard("Available Rooms", "—",      "See Rooms section",     "#e67e22"), 1, 1);
+        grid.add(createStatsCard("Monthly Revenue", "—",      "See Payments section",  "#9b59b6"), 2, 1);
+        grid.add(createStatsCard("Occupancy Rate",  "—",      "See Rooms section",     "#e74c3c"), 3, 1);
         grid.add(createActivitiesCard(), 0, 2, 2, 1);
         grid.add(createChartCard(),      2, 2, 2, 1);
 
@@ -140,13 +139,8 @@ public class DashboardView extends Application {
         card.setStyle("-fx-background-color: " + color + "; -fx-background-radius: 5;");
         card.setPrefHeight(100);
 
-        Label t = new Label(title);
-        t.setFont(Font.font("Arial", FontWeight.BOLD, 16));
-        t.setTextFill(Color.WHITE);
-
-        Label c = new Label(content);
-        c.setTextFill(Color.WHITE);
-        c.setWrapText(true);
+        Label t = new Label(title);   t.setFont(Font.font("Arial", FontWeight.BOLD, 16)); t.setTextFill(Color.WHITE);
+        Label c = new Label(content); c.setTextFill(Color.WHITE); c.setWrapText(true);
 
         card.getChildren().addAll(t, c);
         return card;
@@ -158,8 +152,8 @@ public class DashboardView extends Application {
         card.setStyle("-fx-background-color: white; -fx-background-radius: 5; -fx-border-color: #ddd; -fx-border-radius: 5;");
         card.setPrefHeight(120);
 
-        Label t = new Label(title); t.setFont(Font.font("Arial", 12)); t.setTextFill(Color.GRAY);
-        Label v = new Label(value); v.setFont(Font.font("Arial", FontWeight.BOLD, 24));
+        Label t  = new Label(title);  t.setFont(Font.font("Arial", 12)); t.setTextFill(Color.GRAY);
+        Label v  = new Label(value);  v.setFont(Font.font("Arial", FontWeight.BOLD, 24));
         Label ch = new Label(change); ch.setFont(Font.font("Arial", 11)); ch.setTextFill(Color.web(color));
         Rectangle accent = new Rectangle(50, 3); accent.setFill(Color.web(color));
 
@@ -197,7 +191,7 @@ public class DashboardView extends Application {
 
         XYChart.Series<String, Number> series = new XYChart.Series<>();
         String[] months = {"Jan","Feb","Mar","Apr","May","Jun"};
-        int[] values    = {145,  148,  152,  150,  156,  155};
+        int[]    values = {145,  148,  152,  150,  156,  155};
         for (int i = 0; i < months.length; i++)
             series.getData().add(new XYChart.Data<>(months[i], values[i]));
 
@@ -210,30 +204,15 @@ public class DashboardView extends Application {
 
     private void initializeSampleData() {
         recentActivities.addAll(
-            "10:30 AM - Student John Doe checked in",
-            "09:45 AM - Room 205 payment received",
+            "10:30 AM - Student checked in",
+            "09:45 AM - Payment received",
             "Yesterday - New student registered",
             "Yesterday - Maintenance request completed",
-            "2 days ago - Room 101 cleaning done"
+            "2 days ago - Room cleaning done"
         );
-        
-        students.addAll(
-                new Student("S001", "John Smith",    20, "Computer Science"),
-                new Student("S002", "Emma Watson",   21, "Business"),
-                new Student("S003", "Michael Brown", 19, "Engineering"),
-                new Student("S004", "Sarah Davis",   22, "Medicine"),
-                new Student("S005", "James Wilson",  20, "Law")
-            );
-
-            students.get(0).setRoomId("101"); students.get(0).setStatus("Active");
-            students.get(1).setRoomId("102"); students.get(1).setStatus("Active");
-            students.get(2).setRoomId("103"); students.get(2).setStatus("Suspended");
-            students.get(3).setRoomId("104"); students.get(3).setStatus("Active");
-            students.get(4).setRoomId("105"); students.get(4).setStatus("Active");
+        // Students are loaded from DB inside StudentsView — no sample data needed here
     }
 
-    
-    /** Replaces Thread-based timer with JavaFX Timeline (recommended for UI updates) */
     private void startClock() {
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         Timeline clock = new Timeline(new KeyFrame(Duration.seconds(1), e ->
@@ -255,18 +234,13 @@ public class DashboardView extends Application {
     }
 
     private void redirectToLogin() {
-        try {
-            new LoginView().start(new Stage());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        try { new LoginView().start(new Stage()); }
+        catch (Exception e) { e.printStackTrace(); }
     }
 
     private void showAlert(Alert.AlertType type, String title, String header, String content) {
         Alert alert = new Alert(type);
-        alert.setTitle(title);
-        alert.setHeaderText(header);
-        alert.setContentText(content);
+        alert.setTitle(title); alert.setHeaderText(header); alert.setContentText(content);
         alert.showAndWait();
     }
 

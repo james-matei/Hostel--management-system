@@ -27,11 +27,9 @@ public class SettingsView {
         box.setStyle("-fx-background-color: white; -fx-background-radius: 10; -fx-border-color: #ddd; -fx-border-radius: 10;");
 
         String[][] settings = {
-            {"🔔 Notifications",       "Manage your notification preferences"},
+        
             {"🔐 Change Password",      "Update your account password"},
-            {"📱 Contact Preferences",  "Set how we contact you"},
-            {"🌙 Dark Mode",            "Toggle dark/light theme"},
-            {"📧 Email Settings",       "Configure email notifications"}
+            
         };
 
         for (String[] s : settings) {
