@@ -1,135 +1,91 @@
 package controller;
 
-import dao.AdminDao;  // Add this import
-import dao.StudentDao; // Add this import
+import dao.AdminDao;
+import dao.StudentDao;
 import model.Admin;
 import model.Student;
 
 public class AuthController {
-    
-    private AdminDao adminDao;
+
+    private AdminDao   adminDao;
     private StudentDao studentDao;
-    
-    // Static fields for current user
+
     private static Object currentUser;
-    
+
     public AuthController() {
-        this.adminDao = new AdminDao();
+        this.adminDao   = new AdminDao();
         this.studentDao = new StudentDao();
     }
-    
-    public static void setCurrentUser(Object user) {
-        currentUser = user;
-    }
-    
-    public static Object getCurrentUser() {
-        return currentUser;
-    }
-    
-    public static boolean isAuthenticated() {
-        return currentUser != null;
-    }
-    
+
+    public static void setCurrentUser(Object user) { currentUser = user; }
+    public static Object getCurrentUser()          { return currentUser; }
+    public static boolean isAuthenticated()        { return currentUser != null; }
+
     public static void logout() {
         currentUser = null;
         System.out.println("User logged out");
     }
-    
+
     /**
-     * Login method that checks credentials and returns appropriate user
-     * @param username The username (for admin) or student ID (for students)
-     * @param password The password
-     * @return Object - can be Admin or Student, null if login fails
+     * Attempts login for either Admin or Student.
+     * Admin password is checked against the admin table.
+     * Student password is checked against the password stored in the student table.
+     *
+     * @param username the username entered on the login screen
+     * @param password the password entered on the login screen
+     * @return Admin or Student object on success, null on failure
      */
     public Object login(String username, String password) {
-        System.out.println("🔐 Attempting login for: " + username);
-        
-        // First try to login as Admin
+        System.out.println("Attempting login for: " + username);
+
+        // ── Try Admin first ───────────────────────────────────────────────────
         Admin admin = adminDao.getAdminByUsername(username);
         if (admin != null) {
-            System.out.println("✅ Admin found: " + admin.getName());
-            
-            // Check password (in real app, use password hashing)
             if (admin.getPassword().equals(password)) {
-                System.out.println("✅ Admin password correct");
-                // Update last login
+                System.out.println("Admin login successful: " + admin.getName());
                 adminDao.updateLastLogin(admin.getId());
                 return admin;
             } else {
-                System.out.println("❌ Admin password incorrect");
-                return null;
+                System.out.println("Admin password incorrect");
+                return null; // username matched admin but password wrong — don't fall through
             }
         }
-        
-        // If not admin, try as Student (using ID as username)
+
+        // ── Try Student ───────────────────────────────────────────────────────
         Student student = studentDao.getStudentByUsername(username);
         if (student != null) {
-            System.out.println("✅ Student found: " + student.getName());
-            
-            // For students, you might have a default or no password
-            // This is simplified - in real app, students might have PIN or use QR codes
-            if (password.equals("student123") || password.isEmpty()) {
-                System.out.println("✅ Student login successful");
+            if (student.getPassword() != null && student.getPassword().equals(password)) {
+                System.out.println("Student login successful: " + student.getName());
                 return student;
             } else {
-                System.out.println("❌ Student password incorrect");
+                System.out.println("Student password incorrect");
                 return null;
             }
         }
-        
-        System.out.println("❌ No user found with username: " + username);
+
+        System.out.println("No user found with username: " + username);
         return null;
     }
-    
-    /**
-     * Check if the logged-in user is an Admin
-     */
-    public boolean isAdmin(Object user) {
-        return user instanceof Admin;
-    }
-    
-    /**
-     * Check if the logged-in user is a Student
-     */
-    public boolean isStudent(Object user) {
-        return user instanceof Student;
-    }
-    
-    /**
-     * Get the role of the logged-in user
-     */
+
+    // ── Role checks ───────────────────────────────────────────────────────────
+
+    public boolean isAdmin(Object user)   { return user instanceof Admin; }
+    public boolean isStudent(Object user) { return user instanceof Student; }
+
     public String getRole(Object user) {
-        if (user instanceof Admin) {
-            Admin admin = (Admin) user;
-            return "ADMIN:" + admin.getRole();
-        } else if (user instanceof Student) {
-            return "STUDENT";
-        } else {
-            return "UNKNOWN";
-        }
+        if (user instanceof Admin a)   return "ADMIN:" + a.getRole();
+        if (user instanceof Student)   return "STUDENT";
+        return "UNKNOWN";
     }
-    
-    /**
-     * Get admin-specific details if user is admin
-     */
-    public Admin getAdmin(Object user) {
-        return (user instanceof Admin) ? (Admin) user : null;
-    }
-    
-    /**
-     * Get student-specific details if user is student
-     */
-    public Student getStudent(Object user) {
-        return (user instanceof Student) ? (Student) user : null;
-    }
-    
-    /**
-     * Simple password change for admin
-     */
+
+    public Admin   getAdmin(Object user)   { return (user instanceof Admin a)   ? a : null; }
+    public Student getStudent(Object user) { return (user instanceof Student s) ? s : null; }
+
+    // ── Password change (admin only) ──────────────────────────────────────────
+
     public boolean changeAdminPassword(String adminId, String oldPassword, String newPassword) {
         Admin admin = adminDao.getAdminById(adminId);
         if (admin != null && admin.getPassword().equals(oldPassword)) {
-            // In real app, hash the password before storing
             return adminDao.updatePassword(adminId, newPassword);
         }
         return false;
