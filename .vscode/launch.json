@@ -1,0 +1,49 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "StudentDashboardView",
+            "request": "launch",
+            "mainClass": "view.StudentDashboardView",
+            "projectName": "HostelManagementSystem_566f03b"
+        },
+        {
+            "type": "java",
+            "name": "LoginView",
+            "request": "launch",
+            "mainClass": "view.LoginView",
+            "projectName": "HostelManagementSystem_566f03b"
+        },
+        {
+            "type": "java",
+            "name": "TestConnection",
+            "request": "launch",
+            "mainClass": "util.TestConnection",
+            "projectName": "HostelManagementSystem_566f03b"
+        },
+        {
+            "type": "java",
+            "name": "TestDB",
+            "request": "launch",
+            "mainClass": "util.TestDB",
+            "projectName": "HostelManagementSystem_566f03b"
+        },
+        {
+            "type": "java",
+            "name": "Launch DashboardView",
+            "request": "launch",
+            "mainClass": "view.DashboardView",
+            "projectName": "HostelManagementSystem_566f03b",
+            "vmArgs": "--module-path \"javafx-sdk-21.0.10/lib\" --add-modules javafx.controls,javafx.fxml"
+        },
+        {
+            "type": "java",
+            "name": "Launch Main",
+            "request": "launch",
+            "mainClass": "Main",
+            "projectName": "HostelManagementSystem_566f03b",
+            "vmArgs": "--module-path \"javafx-sdk-21.0.10/lib\" --add-modules javafx.controls,javafx.fxml"
+        }
+    ]
+}
