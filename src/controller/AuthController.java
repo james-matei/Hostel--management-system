@@ -4,18 +4,19 @@ import dao.AdminDao;
 import dao.StudentDao;
 import model.Admin;
 import model.Student;
+import util.DatabaseConnection;
+import util.PasswordUtil;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 
 public class AuthController {
 
-    private AdminDao   adminDao;
-    private StudentDao studentDao;
+    private final AdminDao   adminDao   = new AdminDao();
+    private final StudentDao studentDao = new StudentDao();
 
     private static Object currentUser;
-
-    public AuthController() {
-        this.adminDao   = new AdminDao();
-        this.studentDao = new StudentDao();
-    }
 
     public static void setCurrentUser(Object user) { currentUser = user; }
     public static Object getCurrentUser()          { return currentUser; }
@@ -27,34 +28,45 @@ public class AuthController {
     }
 
     /**
-     * Attempts login for either Admin or Student.
-     * Admin password is checked against the admin table.
-     * Student password is checked against the password stored in the student table.
-     *
-     * @param username the username entered on the login screen
-     * @param password the password entered on the login screen
-     * @return Admin or Student object on success, null on failure
+     * Attempts login for Admin or Student.
+     * Auto-migrates plain text passwords to BCrypt on successful login.
      */
     public Object login(String username, String password) {
         System.out.println("Attempting login for: " + username);
 
-        // ── Try Admin first ───────────────────────────────────────────────────
+        // ── Try Admin ─────────────────────────────────────────────────────────
         Admin admin = adminDao.getAdminByUsername(username);
         if (admin != null) {
-            if (admin.getPassword().equals(password)) {
+            String stored = admin.getPassword();
+            boolean match = PasswordUtil.verify(password, stored);
+
+            if (match) {
+                // Auto-migrate plain text to BCrypt if needed
+                if (!PasswordUtil.isHashed(stored)) {
+                    System.out.println("Migrating admin password to BCrypt...");
+                    migrateAdminPassword(admin.getId(), password);
+                }
                 System.out.println("Admin login successful: " + admin.getName());
                 adminDao.updateLastLogin(admin.getId());
                 return admin;
             } else {
                 System.out.println("Admin password incorrect");
-                return null; // username matched admin but password wrong — don't fall through
+                return null;
             }
         }
 
         // ── Try Student ───────────────────────────────────────────────────────
         Student student = studentDao.getStudentByUsername(username);
         if (student != null) {
-            if (student.getPassword() != null && student.getPassword().equals(password)) {
+            String stored = student.getPassword();
+            boolean match = PasswordUtil.verify(password, stored);
+
+            if (match) {
+                // Auto-migrate plain text to BCrypt if needed
+                if (!PasswordUtil.isHashed(stored)) {
+                    System.out.println("Migrating student password to BCrypt...");
+                    migrateStudentPassword(username, password);
+                }
                 System.out.println("Student login successful: " + student.getName());
                 return student;
             } else {
@@ -67,26 +79,52 @@ public class AuthController {
         return null;
     }
 
+    // ── Migration helpers ─────────────────────────────────────────────────────
+
+    private void migrateStudentPassword(String username, String plainPassword) {
+        String sql = "UPDATE student SET password = ? WHERE username = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, PasswordUtil.hash(plainPassword));
+            stmt.setString(2, username);
+            stmt.executeUpdate();
+            System.out.println("✅ Student password migrated to BCrypt");
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void migrateAdminPassword(String adminId, String plainPassword) {
+        String sql = "UPDATE admin SET password = ? WHERE id = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, PasswordUtil.hash(plainPassword));
+            stmt.setString(2, adminId);
+            stmt.executeUpdate();
+            System.out.println("✅ Admin password migrated to BCrypt");
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
     // ── Role checks ───────────────────────────────────────────────────────────
 
     public boolean isAdmin(Object user)   { return user instanceof Admin; }
     public boolean isStudent(Object user) { return user instanceof Student; }
 
     public String getRole(Object user) {
-        if (user instanceof Admin a)   return "ADMIN:" + a.getRole();
-        if (user instanceof Student)   return "STUDENT";
+        if (user instanceof Admin a)  return "ADMIN:" + a.getRole();
+        if (user instanceof Student)  return "STUDENT";
         return "UNKNOWN";
     }
 
     public Admin   getAdmin(Object user)   { return (user instanceof Admin a)   ? a : null; }
     public Student getStudent(Object user) { return (user instanceof Student s) ? s : null; }
 
-    // ── Password change (admin only) ──────────────────────────────────────────
-
     public boolean changeAdminPassword(String adminId, String oldPassword, String newPassword) {
         Admin admin = adminDao.getAdminById(adminId);
-        if (admin != null && admin.getPassword().equals(oldPassword)) {
-            return adminDao.updatePassword(adminId, newPassword);
+        if (admin != null && PasswordUtil.verify(oldPassword, admin.getPassword())) {
+            return adminDao.updatePassword(adminId, PasswordUtil.hash(newPassword));
         }
         return false;
     }

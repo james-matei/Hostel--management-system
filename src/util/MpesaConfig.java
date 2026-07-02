@@ -17,7 +17,7 @@ public class MpesaConfig {
     public static final String CALLBACK_URL = "https://unrestricted-lacey-nonconstricted.ngrok-free.dev/mpesa/callback";
 
     // ── Payment Details ───────────────────────────────────────────────────────
-    public static final double  HOSTEL_FEE       = 10.00;
+    public static final double  HOSTEL_FEE       = 4000.00;
     public static final String  ACCOUNT_REFERENCE = "HostelFee";
     public static final String  TRANSACTION_DESC  = "Hostel Fee Payment";
 }

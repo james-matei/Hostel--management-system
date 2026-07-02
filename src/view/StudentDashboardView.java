@@ -225,7 +225,7 @@ public class StudentDashboardView extends Application {
             "Floor: " + getFloorNumber(), "#9b59b6"), 2, 1);
 
         grid.add(createStatsCard("Room Price",
-            "KSh 10,000", "Per semester", "#e74c3c"), 3, 1);
+            "KSh 4,000", "Per semester", "#e74c3c"), 3, 1);
 
         grid.add(buildAnnouncementsPreview(), 0, 2, 2, 1);
         grid.add(buildRecentPaymentsPreview(), 2, 2, 2, 1);

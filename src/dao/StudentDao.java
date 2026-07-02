@@ -3,6 +3,7 @@ package dao;
 import model.Student;
 import util.DatabaseConnection;
 import java.sql.*;
+import util.PasswordUtil;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -14,7 +15,7 @@ public class StudentDao {
      * Loads a student by username, including password for login verification.
      */
     public Student getStudentByUsername(String username) {
-       String sql = "SELECT p.*, s.course, s.roomId, s.enrollment_date, s.status, s.username, s.password, s.regNumber " +
+        String sql = "SELECT p.*, s.course, s.roomId, s.enrollment_date, s.status, s.username, s.password, s.regNumber " +
              "FROM person p JOIN student s ON p.id = s.id WHERE s.username = ?";
 
         try (Connection conn = DatabaseConnection.getConnection();
@@ -71,7 +72,6 @@ public class StudentDao {
                 student.setRoomId(rs.getString("roomId"));
                 student.setStatus(rs.getString("status"));
                 student.setUsername(rs.getString("username"));
-                student.setRegNumber(rs.getString("regNumber"));
                 return student;
             }
 
@@ -151,7 +151,7 @@ public class StudentDao {
                         ps2.setString(3, student.getRoomId());
                         ps2.setString(4, student.getStatus());
                         ps2.setString(5, student.getUsername());
-                        ps2.setString(6, student.getPassword());
+                        ps2.setString(6, PasswordUtil.hash(student.getPassword()));
                         ps2.setString(7, student.getRegNumber());
                         ps2.executeUpdate();
                     }
@@ -206,7 +206,7 @@ public class StudentDao {
                 ps2.setString(3, student.getStatus());
                 ps2.setString(4, student.getUsername());
                 if (changePassword) {
-                    ps2.setString(5, student.getPassword());
+                    ps2.setString(5, PasswordUtil.hash(student.getPassword()));
                     ps2.setString(6, student.getRegNumber());
                     ps2.setString(7, student.getId());
                 } else {

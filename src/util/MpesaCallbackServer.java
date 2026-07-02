@@ -123,9 +123,10 @@ public class MpesaCallbackServer {
                     return;
                 }
 
-                // ── Save payment to DB ────────────────────────────────────────
-                Payment payment = new Payment(
-                    "MPE-" + receiptNumber,
+                // Save payment to DB .System.currentTimeMillis() appends the current timestamp in milliseconds to the paymentId
+                    String paymentId = "MPE-" + receiptNumber + "-" + System.currentTimeMillis();
+                    Payment payment = new Payment(
+                    paymentId,
                     studentId,
                     amount,
                     LocalDate.now(),

@@ -2,7 +2,7 @@
     "java.home": "C:\\Program Files\\Eclipse Adoptium\\jdk-21.0.10.7-hotspot",
     "java.project.sourcePaths": ["src"],
     "java.project.referencedLibraries": [
-        "bib/**/*.jar",
+        //"bib/**/*.jar",
         "Lib/**/*.jar",
         "javafx-sdk-21.0.10/lib/*.jar"
     ],

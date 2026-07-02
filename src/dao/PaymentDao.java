@@ -10,11 +10,7 @@ import java.util.List;
 
 public class PaymentDao {
 
-    // ── READ ──────────────────────────────────────────────────────────────────
-
-    /**
-     * Returns all payments for a given student ordered by most recent first.
-     */
+    
     public List<Payment> getPaymentsByStudentId(String studentId) {
         List<Payment> list = new ArrayList<>();
         String sql = "SELECT * FROM payment WHERE studentId = ? ORDER BY paymentDate DESC";
@@ -75,7 +71,7 @@ public class PaymentDao {
 
         String sql = "SELECT COUNT(*) FROM payment " +
              "WHERE studentId = ? AND status = 'Paid' " +
-             "AND amount >= 10000.00 " +
+             "AND amount >= 4000.00 " +
              "AND paymentDate BETWEEN ? AND ?";
 
         try (Connection conn = DatabaseConnection.getConnection();
